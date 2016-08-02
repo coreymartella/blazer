@@ -59,7 +59,7 @@ module Blazer
 
     def chart_type
       @chart_type ||= begin
-        if column_types.compact.size >= 2 && column_types.compact == ["time"] + (column_types.compact.size - 1).times.map { "numeric" }
+        if column_types.compact.size >= 2 && column_types.compact == ["time"] + (column_types.compact.size - 1).times.map { "numeric" } || column_types == ['numeric','numeric']
           "line"
         elsif column_types == ["time", "string", "numeric"]
           "line2"
