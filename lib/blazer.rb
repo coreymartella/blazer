@@ -31,8 +31,6 @@ module Blazer
     attr_accessor :anomaly_checks
     attr_accessor :async
     attr_accessor :images
-    attr_accessor :time_format
-    attr_accessor :date_format
   end
   self.audit = true
   self.user_name = :name

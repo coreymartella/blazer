@@ -8,8 +8,6 @@ module Blazer
       app.config.assets.precompile << proc { |path| path =~ /\Ablazer\/.+\.(eot|svg|ttf|woff)\z/ }
 
       Blazer.time_zone ||= Blazer.settings["time_zone"] || Time.zone
-      Blazer.time_format ||= Blazer.settings["time_format"] if Blazer.settings.key?("time_format")
-      Blazer.date_format ||= Blazer.settings["date_format"] if Blazer.settings.key?("date_format")
       Blazer.audit = Blazer.settings.key?("audit") ? Blazer.settings["audit"] : true
       Blazer.user_name = Blazer.settings["user_name"] if Blazer.settings["user_name"]
       Blazer.from_email = Blazer.settings["from_email"] if Blazer.settings["from_email"]

@@ -1,7 +1,6 @@
 Blazer::Engine.routes.draw do
   resources :queries do
     post :run, on: :collection # err on the side of caution
-    get :run, on: :collection # err on the side of caution
     post :refresh, on: :member
     get :tables, on: :collection
   end
