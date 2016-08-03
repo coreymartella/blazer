@@ -23,6 +23,8 @@ module Blazer
         else
           link_to value, value, target: "_blank"
         end
+      elsif value.is_a?(Time) || value.is_a?(Date)
+        I18n.l(value)
       else
         value
       end

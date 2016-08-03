@@ -114,8 +114,8 @@
             <thead>
               <tr>
                 <% @columns.each_with_index do |key, i| %>
-                  <% type = @column_types[i] %>
-                  <th style="width: <%= header_width %>%;" data-sort="<%= type %>">
+                  <% type = column_types[i] %>
+                  <th style="width: <%= header_width %>%;" class="<%= 'text-right' if type == "numeric" %>" data-sort="<%= type %>">
                     <div style="min-width: <%= @min_width_types.include?(i) ? 180 : 60 %>px;">
                       <%= key %>
                     </div>
@@ -128,7 +128,8 @@
                 <tr>
                   <% row.each_with_index do |v, i| %>
                     <% k = @columns[i] %>
-                    <td>
+                    <% type = column_types[i] %>
+                    <td class="<%= 'text-right' if type == "numeric" %>">
                       <% if v.is_a?(Time) %>
                         <% v = blazer_time_value(@data_source, k, v) %>
                       <% end %>
