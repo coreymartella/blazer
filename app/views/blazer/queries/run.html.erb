@@ -114,8 +114,9 @@
             <thead>
               <tr>
                 <% @columns.each_with_index do |key, i| %>
+                  <% sort_type = @column_types[i] %>
                   <% type = column_types[i] %>
-                  <th style="width: <%= header_width %>%;" data-sort="<%= type %>" class="<%= 'text-right' if type == "numeric" %>">
+                  <th style="width: <%= header_width %>%;" data-sort="<%= sort_type %>" class="<%= 'text-right' if type == "numeric" %>">
                     <div style="min-width: <%= @min_width_types.include?(i) ? 180 : 60 %>px;">
                       <%= key %>
                     </div>
@@ -127,7 +128,6 @@
               <% @rows.each do |row| %>
                 <tr>
                   <% row.each_with_index do |v, i| %>
-                    <% k = @columns[i] %>
                     <% type = column_types[i] %>
                     <td class="<%= 'text-right' if type == "numeric" %>">
                       <% if v.is_a?(Time) %>
