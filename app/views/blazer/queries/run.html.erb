@@ -110,7 +110,7 @@
         <% if @columns == ["QUERY PLAN"] %>
           <pre><code><%= @rows.map { |r| r[0] }.join("\n") %></code></pre>
         <% else %>
-          <table class="table results-table" style="margin-bottom: 0;">
+          <table class="table results-table" style="width: auto; margin-bottom: 0; margin-left: auto; margin-right: auto;">
             <thead>
               <tr>
                 <% @columns.each_with_index do |key, i| %>
