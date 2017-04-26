@@ -93,7 +93,7 @@
           <% first_20 << [l, s, 0] unless first_20.find { |r| r[0] == l && r[1] == s } %>
         <% end %>
       <% end %>
-      <% data = first_20.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: name, data: v.sort_by { |r2| labels.index(r2[0]) }.map { |v2| v3 = v2[0]; [(@boom[@columns[0]] || {})[v3.to_s] || v3, v2[2]] }} } %>
+      <% data = first_20.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: name, data: v.sort_by { |r2| labels.index(r2[0]) }.map { |v2| v3 = v2[0]; [(@boom[@columns[0]] || {})[v3.to_s] || v3, v2[2]] }} }.sort_by{|h| h[:name].to_s} %>
       <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) ? data.map{|d| BLAZER_COLOR_MAP[d[:name]]} : nil) %>
     <% elsif @only_chart %>
       <% if @rows.size == 1 && @rows.first.size == 1 %>
