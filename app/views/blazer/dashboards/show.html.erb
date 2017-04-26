@@ -1,7 +1,7 @@
 <% blazer_title @dashboard.name %>
 
 <div class="topbar">
-  <div class="container">
+  <div class="container-fluid">
     <div class="row" style="padding-top: 13px;">
       <div class="col-sm-9">
         <%= render partial: "blazer/nav" %>
@@ -135,7 +135,11 @@
 
     runQuery(data, function (data) {
       $("#chart-<%= i %>").html(data);
-      $("#chart-<%= i %> table").stupidtable();
+      $("#chart-<%= i %> table").each(function(i){
+        $(this).stupidtable();
+        //grow the parent container big enough for the table
+        $(this).parents(".results-container, .chart").css({overflow: "auto", height: "auto"})
+      })
     }, function (message) {
       $("#chart-<%= i %>").css("color", "red").html(message);
     });
