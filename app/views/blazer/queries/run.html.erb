@@ -77,13 +77,13 @@
       </script>
     <% elsif chart_type == "line" %>
       <% data = @columns[1..-1].each_with_index.map{ |k, i| {name: k, data: @rows.map{ |r| [r[0], r[i + 1]] }, library: series_library[i]} } %>
-      <%= line_chart data, chart_options.merge(colors: defined?(BLAZER_COLOR_MAP) ? data.map{|d| BLAZER_COLOR_MAP[d[:name]]} : nil) %>
+      <%= line_chart data, chart_options.merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif chart_type == "line2" %>
       <% data = @rows.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: name, data: v.map { |v2| [v2[0], v2[2]] }, library: series_library[i]} } %>
-      <%= line_chart data, chart_options.merge(colors: defined?(BLAZER_COLOR_MAP) ? data.map{|d| BLAZER_COLOR_MAP[d[:name]]} : nil) %>
+      <%= line_chart data, chart_options.merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif chart_type == "bar" %>
       <% data = (values.size - 1).times.map { |i| name = @columns[i + 1]; {name: name, data: @rows.first(50).map { |r| [(@boom[@columns[0]] || {})[r[0].to_s] || r[0], r[i + 1]] } } } %>
-      <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) ? data.map{|d| BLAZER_COLOR_MAP[d[:name]]} : nil) %>
+      <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif chart_type == "bar2" %>
       <% first_20 = @rows.group_by { |r| r[0] }.values.first(50).flatten(1) %>
       <% labels = first_20.map { |r| r[0] }.uniq %>
@@ -94,7 +94,7 @@
         <% end %>
       <% end %>
       <% data = first_20.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: name, data: v.sort_by { |r2| labels.index(r2[0]) }.map { |v2| v3 = v2[0]; [(@boom[@columns[0]] || {})[v3.to_s] || v3, v2[2]] }} }.sort_by{|h| h[:name].to_s} %>
-      <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) ? data.map{|d| BLAZER_COLOR_MAP[d[:name]]} : nil) %>
+      <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif @only_chart %>
       <% if @rows.size == 1 && @rows.first.size == 1 %>
         <% v = @rows.first.first %>
