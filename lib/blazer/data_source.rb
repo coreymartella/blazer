@@ -4,31 +4,13 @@ module Blazer
   class DataSource
     extend Forwardable
 
-    attr_reader :id, :settings, :adapter, :adapter_instance
+    attr_reader :id, :settings
 
-    def_delegators :adapter_instance, :schema, :tables, :preview_statement, :reconnect, :cost, :explain
+    def_delegators :adapter_instance, :schema, :tables, :preview_statement, :reconnect, :cost, :explain, :cancel
 
     def initialize(id, settings)
       @id = id
       @settings = settings
-
-      unless settings["url"] || Rails.env.development?
-        raise Blazer::Error, "Empty url"
-      end
-
-      @adapter_instance =
-        case adapter
-        when "elasticsearch"
-          Blazer::Adapters::ElasticsearchAdapter.new(self)
-        when "mongodb"
-          Blazer::Adapters::MongodbAdapter.new(self)
-        when "presto"
-          Blazer::Adapters::PrestoAdapter.new(self)
-        when "sql"
-          Blazer::Adapters::SqlAdapter.new(self)
-        else
-          raise Blazer::Error, "Unknown adapter"
-        end
     end
 
     def adapter
@@ -109,9 +91,14 @@ module Blazer
 
     def run_statement(statement, options = {})
       run_id = options[:run_id]
+      async = options[:async]
       result = nil
-      if cache_mode != "off" && !options[:refresh_cache]
-        result = read_cache(statement_cache_key(statement))
+      if cache_mode != "off"
+        if options[:refresh_cache]
+          clear_cache(statement) # for checks
+        else
+          result = read_cache(statement_cache_key(statement))
+        end
       end
 
       unless result
@@ -129,7 +116,10 @@ module Blazer
         if options[:check]
           comment << ",check_id:#{options[:check].id},check_emails:#{options[:check].emails}"
         end
-        result = run_statement_helper(statement, comment, options[:run_id])
+        if options[:run_id]
+          comment << ",run_id:#{options[:run_id]}"
+        end
+        result = run_statement_helper(statement, comment, async ? options[:run_id] : nil)
       end
 
       result
@@ -144,7 +134,7 @@ module Blazer
     end
 
     def statement_cache_key(statement)
-      cache_key(["statement", id, Digest::MD5.hexdigest(statement)])
+      cache_key(["statement", id, Digest::MD5.hexdigest(statement.to_s.gsub("\r\n", "\n"))])
     end
 
     def run_cache_key(run_id)
@@ -153,9 +143,23 @@ module Blazer
 
     protected
 
+    def adapter_instance
+      @adapter_instance ||= begin
+        unless settings["url"] || ["bigquery", "athena"].include?(settings["adapter"])
+          raise Blazer::Error, "Empty url for data source: #{id}"
+        end
+
+        unless Blazer.adapters[adapter]
+          raise Blazer::Error, "Unknown adapter"
+        end
+
+        Blazer.adapters[adapter].new(self)
+      end
+    end
+
     def run_statement_helper(statement, comment, run_id)
       start_time = Time.now
-      columns, rows, error = @adapter_instance.run_statement(statement, comment)
+      columns, rows, error = adapter_instance.run_statement(statement, comment)
       duration = Time.now - start_time
 
       cache_data = nil
@@ -164,7 +168,7 @@ module Blazer
         cache_data = Marshal.dump([columns, rows, error, cache ? Time.now : nil]) rescue nil
       end
 
-      if cache && cache_data
+      if cache && cache_data && adapter_instance.cachable?(statement)
         Blazer.cache.write(statement_cache_key(statement), cache_data, expires_in: cache_expires_in.to_f * 60)
       end
 

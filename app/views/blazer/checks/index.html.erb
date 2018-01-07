@@ -19,12 +19,12 @@
         <td><%= link_to check.query.name, check.query %> <span class="text-muted"><%= check.try(:check_type).to_s.gsub("_", " ") %></span></td>
         <td>
           <% if check.state %>
-            <small class="check-state <%= check.state.parameterize("_") %>"><%= check.state.upcase %></small>
+            <small class="check-state <%= check.state.parameterize.gsub("-", "_") %>"><%= check.state.upcase %></small>
           <% end %>
         </td>
         <td><%= check.schedule if check.respond_to?(:schedule) %></td>
         <td>
-          <ul class="list-unstyled" style="margin-bottom: 0;">
+          <ul class="list-unstyled" style="margin-bottom: 0; word-break: break-all;">
             <% check.split_emails.each do |email| %>
               <li><%= email %></li>
             <% end %>
@@ -32,7 +32,7 @@
         </td>
         <td style="text-align: right; padding: 1px;">
           <%= link_to "Edit", edit_check_path(check), class: "btn btn-info" %>
-          <%= link_to "Run Now", run_check_path(check), target: "_blank", class: "btn btn-primary" %>
+          <%= link_to "Run Now", query_path(check.query), class: "btn btn-primary" %>
         </td>
       </tr>
     <% end %>

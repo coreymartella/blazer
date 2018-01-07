@@ -19,17 +19,17 @@ module Blazer
       @check.creator = blazer_user if @check.respond_to?(:creator_id=) && blazer_user
 
       if @check.save
-        redirect_to run_check_path(@check)
+        redirect_to query_path(@check.query)
       else
-        render :new
+        render_errors @check
       end
     end
 
     def update
       if @check.update(check_params)
-        redirect_to run_check_path(@check)
+        redirect_to query_path(@check.query)
       else
-        render :edit
+        render_errors @check
       end
     end
 
@@ -45,12 +45,12 @@ module Blazer
 
     private
 
-    def check_params
-      params.require(:check).permit(:query_id, :emails, :invert, :check_type, :schedule)
-    end
+      def check_params
+        params.require(:check).permit(:query_id, :emails, :invert, :check_type, :schedule)
+      end
 
-    def set_check
-      @check = Blazer::Check.find(params[:id])
-    end
+      def set_check
+        @check = Blazer::Check.find(params[:id])
+      end
   end
 end

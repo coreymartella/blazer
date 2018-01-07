@@ -15,6 +15,10 @@ module Blazer
         [] # optional, but nice to have
       end
 
+      def schema
+        [] # optional, but nice to have
+      end
+
       def preview_statement
         "" # also optional, but nice to have
       end
@@ -29,6 +33,14 @@ module Blazer
 
       def explain(statement)
         # optional
+      end
+
+      def cancel(run_id)
+        # optional
+      end
+
+      def cachable?(statement)
+        true # optional
       end
 
       protected

@@ -1,5 +1,5 @@
 <% if @error %>
-  <div class="alert alert-danger"><%= @error %></div>
+  <div class="alert alert-danger"><%= @error.first(200) %></div>
 <% elsif !@success %>
   <% if @only_chart %>
     <p class="text-muted">Select variables</p>
@@ -28,7 +28,7 @@
       <%= pluralize(@rows.size, "row") %>
 
       <% @checks.select(&:state).each do |check| %>
-        &middot; <small class="check-state <%= check.state.parameterize("_") %>"><%= link_to check.state.upcase, edit_check_path(check) %></small>
+        &middot; <small class="check-state <%= check.state.parameterize.gsub("-", "_") %>"><%= link_to check.state.upcase, edit_check_path(check) %></small>
         <% if check.try(:message) %>
           &middot; <%= check.message %>
         <% end %>
@@ -51,7 +51,7 @@
       <script>
         L.mapbox.accessToken = '<%= ENV["MAPBOX_ACCESS_TOKEN"] %>';
         var map = L.mapbox.map('map', 'ankane.ioo8nki0');
-        var markers = <%= blazer_json_escape(@markers.to_json).html_safe %>;
+        <%= blazer_js_var "markers", @markers %>
         var featureLayer = L.mapbox.featureLayer().addTo(map);
         var geojson = [];
         for (var i = 0; i < markers.length; i++) {
@@ -76,13 +76,13 @@
         map.fitBounds(featureLayer.getBounds());
       </script>
     <% elsif chart_type == "line" %>
-      <% data = @columns[1..-1].each_with_index.map{ |k, i| {name: k, data: @rows.map{ |r| [r[0], r[i + 1]] }, library: series_library[i]} } %>
+      <% data= @columns[1..-1].each_with_index.map{ |k, i| {name: blazer_series_name(k), data: @rows.map{ |r| [r[0], r[i + 1]] }, library: series_library[i]} }, chart_options %>
       <%= line_chart data, chart_options.merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif chart_type == "line2" %>
-      <% data = @rows.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: name, data: v.map { |v2| [v2[0], v2[2]] }, library: series_library[i]} } %>
+      <% data @rows.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: blazer_series_name(name), data: v.map { |v2| [v2[0], v2[2]] }, library: series_library[i]} }, chart_options %>
       <%= line_chart data, chart_options.merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif chart_type == "bar" %>
-      <% data = (values.size - 1).times.map { |i| name = @columns[i + 1]; {name: name, data: @rows.first(50).map { |r| [(@boom[@columns[0]] || {})[r[0].to_s] || r[0], r[i + 1]] } } } %>
+      <% data (values.size - 1).times.map { |i| name = @columns[i + 1]; {name: blazer_series_name(name), data: @rows.first(20).map { |r| [(@boom[@columns[0]] || {})[r[0].to_s] || r[0], r[i + 1]] } } }, id: chart_id %>
       <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
     <% elsif chart_type == "bar2" %>
       <% first_20 = @rows.group_by { |r| r[0] }.values.first(50).flatten(1) %>
@@ -93,8 +93,9 @@
           <% first_20 << [l, s, 0] unless first_20.find { |r| r[0] == l && r[1] == s } %>
         <% end %>
       <% end %>
-      <% data = first_20.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: name, data: v.sort_by { |r2| labels.index(r2[0]) }.map { |v2| v3 = v2[0]; [(@boom[@columns[0]] || {})[v3.to_s] || v3, v2[2]] }} }.sort_by{|h| h[:name].to_s} %>
-      <%= column_chart data, chart_options.except(:min).merge(colors: defined?(BLAZER_COLOR_MAP) && data.map{|d| BLAZER_COLOR_MAP[d[:name]]}.compact.presence) %>
+      <% data first_20.group_by { |r| v = r[1]; (@boom[@columns[1]] || {})[v.to_s] || v }.each_with_index.map { |(name, v), i| {name: blazer_series_name(name), data: v.sort_by { |r2| labels.index(r2[0]) }.map { |v2| v3 = v2[0]; [(@boom[@columns[0]] || {})[v3.to_s] || v3, v2[2]] }} }, id: chart_id %>
+    <% elsif chart_type == "scatter" %>
+      <%= scatter_chart @rows, xtitle: @columns[0], ytitle: @columns[1], id: chart_id %>
     <% elsif @only_chart %>
       <% if @rows.size == 1 && @rows.first.size == 1 %>
         <% v = @rows.first.first %>
@@ -113,6 +114,8 @@
       <div class="results-container">
         <% if @columns == ["QUERY PLAN"] %>
           <pre><code><%= @rows.map { |r| r[0] }.join("\n") %></code></pre>
+        <% elsif @columns == ["PLAN"] && @data_source.adapter == "druid" %>
+          <pre><code><%= @rows[0][0] %></code></pre>
         <% else %>
           <table class="table results-table" style="width: auto; margin-bottom: 0; margin-left: auto; margin-right: auto;">
             <thead>
@@ -147,10 +150,10 @@
                         <% else %>
                           <%= blazer_format_value(k, v) %>
                         <% end %>
+                      <% end %>
 
-                        <% if v2 = (@boom[k] || {})[v.to_s] %>
-                          <div class="text-muted"><%= v2 %></div>
-                        <% end %>
+                      <% if v2 = (@boom[k] || {})[v.nil? ? v : v.to_s] %>
+                        <div class="text-muted"><%= v2 %></div>
                       <% end %>
                     </td>
                   <% end %>

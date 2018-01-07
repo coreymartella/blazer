@@ -2,13 +2,13 @@
 
 Explore your data with SQL. Easily create charts and dashboards, and share them with your team.
 
-[Try it out](https://blazerme.herokuapp.com)
+[Try it out](https://blazer.dokkuapp.com)
 
-[![Screenshot](https://blazerme.herokuapp.com/assets/screenshot-18d79092e635b4b220f57ff7a1ecea41.png)](https://blazerme.herokuapp.com)
+[![Screenshot](https://blazerme.herokuapp.com/assets/screenshot-6ca3115a518b488026e48be83ba0d4c9.png)](https://blazer.dokkuapp.com)
+
+:envelope: [Get notified of updates](http://eepurl.com/cbUwsD)
 
 :tangerine: Battle-tested at [Instacart](https://www.instacart.com/opensource)
-
-:envelope: [Subscribe to releases](https://libraries.io/rubygems/blazer)
 
 ## Features
 
@@ -141,7 +141,7 @@ ENV["BLAZER_PASSWORD"] = "secret"
 ### Devise
 
 ```ruby
-authenticate :user, lambda { |user| user.admin? } do
+authenticate :user, -> (user) { user.admin? } do
   mount Blazer::Engine, at: "blazer"
 end
 ```
@@ -152,6 +152,15 @@ Specify a `before_action` method to run in `blazer.yml`.
 
 ```yml
 before_action: require_admin
+```
+
+Then define the custom authentication method in your `application_controller.rb`.
+
+```ruby
+def require_admin
+  # depending on your auth, maybe something like...
+  current_user && current_user.admin?
+end
 ```
 
 ## Queries
@@ -191,6 +200,14 @@ smart_variables:
 
 The first column is the value of the variable, and the second column is the label.
 
+You can also use an array or hash for static data and enums.
+
+```yml
+smart_variables:
+  period: ["day", "week", "month"]
+  status: {0: "Active", 1: "Archived"}
+```
+
 ### Linked Columns
 
 [Example](https://blazerme.herokuapp.com/queries/3-linked-column) - title column
@@ -220,11 +237,11 @@ smart_columns:
   city_id: "SELECT id, name FROM cities WHERE id IN {value}"
 ```
 
-You can also put a Hash into the config for static data:
+You can also use a hash for static data and enums.
 
 ```yml
 smart_columns:
-  gender: {M: Male, F: Female}
+  status: {0: "Active", 1: "Archived"}
 ```
 
 Or an array for numeric index based lookups:
@@ -258,6 +275,8 @@ Of course, you can force a refresh at any time.
 
 Blazer will automatically generate charts based on the types of the columns returned in your query.
 
+**Note:** The order of columns matters.
+
 ### Line Chart
 
 There are two ways to generate line charts.
@@ -289,6 +308,14 @@ SELECT gender, COUNT(*) FROM users GROUP BY 1
 
 ```sql
 SELECT gender, zip_code, COUNT(*) FROM users GROUP BY 1, 2
+```
+
+### Scatter Chart
+
+2 columns - both numeric
+
+```sql
+SELECT x, y FROM table
 ```
 
 ### Maps
@@ -371,18 +398,22 @@ data_sources:
 
 ### Full List
 
-- PostgreSQL
-- MySQL
-- SQL Server
-- Oracle
-- IBM DB2 and Informix
-- SQLite
-- [Redshift](#redshift)
-- [MongoDB](#mongodb) [beta]
-- [Elasticsearch](#elasticsearch) [beta]
-- [Presto](#presto) [beta]
+- [PostgreSQL](#postgresql-1)
+- [MySQL](#mysql-1)
+- [SQL Server](#sql-server)
+- [Oracle](#oracle)
+- [IBM DB2 and Informix](#ibm-db2-and-informix)
+- [SQLite](#sqlite)
+- [Amazon Redshift](#amazon-redshift)
+- [Amazon Athena](#amazon-athena)
+- [Presto](#presto)
+- [Apache Drill](#apache-drill)
+- [Google BigQuery](#google-bigquery)
+- [MongoDB](#mongodb-1)
+- [Druid](#druid)
+- [Elasticsearch](#elasticsearch-beta) [beta]
 
-You can also create an adapter for any other data store.
+You can also [create an adapter](#creating-an-adapter) for any other data store.
 
 **Note:** In the examples below, we recommend using environment variables for urls.
 
@@ -392,14 +423,107 @@ data_sources:
     url: <%= ENV["BLAZER_MY_SOURCE_URL"] %>
 ```
 
-### Redshift
+### PostgreSQL
 
-Add [activerecord4-redshift-adapter](https://github.com/aamine/activerecord4-redshift-adapter) to your Gemfile and set:
+Add [pg](https://bitbucket.org/ged/ruby-pg/wiki/Home) to your Gemfile (if it’s not there) and set:
+
+```yml
+data_sources:
+  my_source:
+    url: postgres://user:password@hostname:5432/database
+```
+
+### MySQL
+
+Add [mysql2](https://github.com/brianmario/mysql2) to your Gemfile (if it’s not there) and set:
+
+```yml
+data_sources:
+  my_source:
+    url: mysql2://user:password@hostname:3306/database
+```
+
+### SQL Server
+
+Add [tiny_tds](https://github.com/rails-sqlserver/tiny_tds) and [activerecord-sqlserver-adapter](https://github.com/rails-sqlserver/activerecord-sqlserver-adapter) to your Gemfile and set:
+
+```yml
+data_sources:
+  my_source:
+    url: sqlserver://user:password@hostname:1433/database
+```
+
+### Oracle
+
+Use [activerecord-oracle_enhanced-adapter](https://github.com/rsim/oracle-enhanced).
+
+### IBM DB2 and Informix
+
+Use [ibm_db](https://github.com/ibmdb/ruby-ibmdb).
+
+### SQLite
+
+Add [sqlite3](https://github.com/sparklemotion/sqlite3-ruby) to your Gemfile and set:
+
+```yml
+data_sources:
+  my_source:
+    url: sqlite3:path/to/database.sqlite3
+```
+
+### Amazon Redshift
+
+Add [activerecord4-redshift-adapter](https://github.com/aamine/activerecord4-redshift-adapter) or [activerecord5-redshift-adapter](https://github.com/ConsultingMD/activerecord5-redshift-adapter) to your Gemfile and set:
 
 ```yml
 data_sources:
   my_source:
     url: redshift://user:password@hostname:5439/database
+```
+
+### Amazon Athena
+
+Add [aws-sdk](https://github.com/aws/aws-sdk-ruby) `~> 2` to your Gemfile and set:
+
+```yml
+data_sources:
+  my_source:
+    adapter: athena
+    database: database
+    output_location: s3://some-bucket/
+```
+
+### Presto
+
+Add [presto-client](https://github.com/treasure-data/presto-client-ruby) to your Gemfile and set:
+
+```yml
+data_sources:
+  my_source:
+    url: presto://user@hostname:8080/catalog
+```
+
+### Apache Drill
+
+Add [drill-sergeant](https://github.com/ankane/drill-sergeant) to your Gemfile and set:
+
+```yml
+data_sources:
+  my_source:
+    adapter: drill
+    url: http://hostname:8047
+```
+
+### Google BigQuery
+
+Add [google-cloud-bigquery](https://github.com/GoogleCloudPlatform/google-cloud-ruby/tree/master/google-cloud-bigquery) to your Gemfile and set:
+
+```yml
+data_sources:
+  my_source:
+    adapter: bigquery
+    project: your-project
+    keyfile: path/to/keyfile.json
 ```
 
 ### MongoDB
@@ -412,7 +536,20 @@ data_sources:
     url: mongodb://user:password@hostname:27017/database
 ```
 
-### Elasticsearch
+### Druid
+
+First, [enable SQL support](http://druid.io/docs/latest/querying/sql.html#configuration) on the broker.
+
+Set:
+
+```yml
+data_sources:
+  my_source:
+    adapter: druid
+    url: http://hostname:8082
+```
+
+### Elasticsearch [beta]
 
 Add [elasticsearch](https://github.com/elastic/elasticsearch-ruby) to your Gemfile and set:
 
@@ -420,18 +557,37 @@ Add [elasticsearch](https://github.com/elastic/elasticsearch-ruby) to your Gemfi
 data_sources:
   my_source:
     adapter: elasticsearch
-    url: http://user:password@hostname:9200/
+    url: http://user:password@hostname:9200
 ```
 
-### Presto
+## Creating an Adapter
 
-Add [presto-client](https://github.com/treasure-data/presto-client-ruby) to your Gemfile and set:
+Create an adapter for any data store with:
+
+```ruby
+class FooAdapter < Blazer::Adapters::BaseAdapter
+  # code goes here
+end
+
+Blazer.register_adapter "foo", FooAdapter
+```
+
+See the [Presto adapter](https://github.com/ankane/blazer/blob/master/lib/blazer/adapters/presto_adapter.rb) for a good example. Then use:
 
 ```yml
 data_sources:
   my_source:
-    url: presto://user@hostname:8080/catalog
+    adapter: foo
+    url: http://user:password@hostname:9200/
 ```
+
+## Query Permissions
+
+Blazer supports a basic permissions model.
+
+1. Queries without a name are unlisted
+2. Queries whose name starts with `#` are only listed to the creator
+3. Queries whose name starts with `*` can only be edited by the creator
 
 ## Learn SQL
 
@@ -601,7 +757,10 @@ audit: true
 # class name of the user model
 # user_class: User
 
-# method name for the user model
+# method name for the current user
+# user_method: current_user
+
+# method name for the display name
 # user_name: name
 
 # email to send checks from
@@ -620,18 +779,7 @@ View the [changelog](https://github.com/ankane/blazer/blob/master/CHANGELOG.md)
 
 ## Thanks
 
-Blazer uses a number of awesome, open source projects.
-
-- [Rails](https://github.com/rails/rails/)
-- [jQuery](https://github.com/jquery/jquery)
-- [Bootstrap](https://github.com/twbs/bootstrap)
-- [Selectize](https://github.com/brianreavis/selectize.js)
-- [List.js](https://github.com/javve/list.js)
-- [StickyTableHeaders](https://github.com/jmosbech/StickyTableHeaders)
-- [Stupid jQuery Table Sort](https://github.com/joequery/Stupid-Table-Plugin)
-- [Date Range Picker](https://github.com/dangrossman/bootstrap-daterangepicker)
-
-Created by [ankane](https://github.com/ankane) and [righi](https://github.com/righi)
+Blazer uses a number of awesome open source projects, including [Rails](https://github.com/rails/rails/), [Vue.js](https://github.com/vuejs/vue), [jQuery](https://github.com/jquery/jquery), [Bootstrap](https://github.com/twbs/bootstrap), [Selectize](https://github.com/brianreavis/selectize.js), [StickyTableHeaders](https://github.com/jmosbech/StickyTableHeaders), [Stupid jQuery Table Sort](https://github.com/joequery/Stupid-Table-Plugin), and [Date Range Picker](https://github.com/dangrossman/bootstrap-daterangepicker).
 
 Demo data from [MovieLens](http://grouplens.org/datasets/movielens/).
 

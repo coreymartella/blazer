@@ -8,8 +8,7 @@ Gem::Specification.new do |spec|
   spec.version       = Blazer::VERSION
   spec.authors       = ["Andrew Kane"]
   spec.email         = ["andrew@chartkick.com"]
-  spec.summary       = "Share data effortlessly with your team"
-  spec.description   = "Share data effortlessly with your team"
+  spec.summary       = "Explore your data with SQL. Easily create charts and dashboards, and share them with your team."
   spec.homepage      = "https://github.com/ankane/blazer"
   spec.license       = "MIT"
 
@@ -18,7 +17,7 @@ Gem::Specification.new do |spec|
   spec.test_files    = spec.files.grep(%r{^(test|spec|features)/})
   spec.require_paths = ["lib"]
 
-  spec.add_dependency "rails"
+  spec.add_dependency "rails", ">= 4"
   spec.add_dependency "chartkick"
   spec.add_dependency "safely_block", ">= 0.1.1"
 

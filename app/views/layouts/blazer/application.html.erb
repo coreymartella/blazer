@@ -8,7 +8,7 @@
     <%= stylesheet_link_tag "blazer/application" %>
     <%= javascript_include_tag "blazer/application" %>
     <script>
-      var runQueriesPath = <%= run_queries_path.to_json.html_safe %>;
+      <%= blazer_js_var "rootPath", root_path %>
     </script>
     <% if blazer_maps? %>
       <%= stylesheet_link_tag "https://api.mapbox.com/mapbox.js/v2.4.0/mapbox.css" %>

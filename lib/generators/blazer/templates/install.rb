@@ -1,4 +1,4 @@
-class <%= migration_class_name %> < ActiveRecord::Migration
+class <%= migration_class_name %> < ActiveRecord::Migration<%= migration_version %>
   def change
     create_table :blazer_queries do |t|
       t.references :creator
@@ -6,7 +6,7 @@ class <%= migration_class_name %> < ActiveRecord::Migration
       t.text :description
       t.text :statement
       t.string :data_source
-      t.timestamps
+      t.timestamps null: false
     end
 
     create_table :blazer_audits do |t|
@@ -20,14 +20,14 @@ class <%= migration_class_name %> < ActiveRecord::Migration
     create_table :blazer_dashboards do |t|
       t.references :creator
       t.text :name
-      t.timestamps
+      t.timestamps null: false
     end
 
     create_table :blazer_dashboard_queries do |t|
       t.references :dashboard
       t.references :query
       t.integer :position
-      t.timestamps
+      t.timestamps null: false
     end
 
     create_table :blazer_checks do |t|
@@ -39,7 +39,7 @@ class <%= migration_class_name %> < ActiveRecord::Migration
       t.string :check_type
       t.text :message
       t.timestamp :last_run_at
-      t.timestamps
+      t.timestamps null: false
     end
   end
 end

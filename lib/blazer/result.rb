@@ -23,15 +23,21 @@ module Blazer
       @boom ||= begin
         boom = {}
         columns.each_with_index do |key, i|
-          query = data_source.smart_columns[key]
-          if query && query.is_a?(Hash)
-            boom[key] = query.stringify_keys
-          elsif query && query.is_a?(Array)
-            boom[key] = Hash[(0..query.size-1).zip(query)].transform_keys(&:to_s)
-          elsif query
-            values = rows.map { |r| r[i] }.compact.uniq
-            result = data_source.run_statement(ActiveRecord::Base.send(:sanitize_sql_array, [query.sub("{value}", "(?)"), values]))
-            boom[key] = Hash[result.rows.map { |k, v| [k.to_s, v] }]
+          smart_columns_data_source =
+            ([data_source] + Array(data_source.settings["inherit_smart_settings"]).map { |ds| Blazer.data_sources[ds] }).find { |ds| ds.smart_columns[key] }
+
+          if smart_columns_data_source
+            query = smart_columns_data_source.smart_columns[key]
+            res =
+              if query.is_a?(Hash)
+                query
+              else
+                values = rows.map { |r| r[i] }.compact.uniq
+                result = smart_columns_data_source.run_statement(ActiveRecord::Base.send(:sanitize_sql_array, [query.sub("{value}", "(?)"), values]))
+                result.rows
+              end
+
+            boom[key] = Hash[res.map { |k, v| [k.nil? ? k : k.to_s, v] }]
           end
         end
         boom
@@ -67,6 +73,8 @@ module Blazer
           "bar"
         elsif column_types == ["string", "string", "numeric"]
           "bar2"
+        elsif column_types == ["numeric", "numeric"]
+          "scatter"
         end
       end
     end

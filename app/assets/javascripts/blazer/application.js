@@ -1,6 +1,5 @@
 //= require ./jquery
 //= require ./jquery_ujs
-//= require ./list
 //= require ./stupidtable
 //= require ./jquery.stickytableheaders
 //= require ./selectize
@@ -10,52 +9,37 @@
 //= require ./daterangepicker
 //= require ./Chart.js
 //= require ./chartkick
-//= require ./ace/ace
-//= require ./ace/ext-language_tools
-//= require ./ace/theme-twilight
-//= require ./ace/mode-sql
-//= require ./ace/snippets/text
-//= require ./ace/snippets/sql
+//= require ./ace
 //= require ./Sortable
 //= require ./bootstrap
+//= require ./vue
+//= require ./routes
+//= require ./queries
+//= require ./fuzzysearch
 
-$( function () {
-  $('.dropdown-toggle').mouseenter( function () {
-    $(this).parent().addClass('open');
-  });
-});
+Vue.config.devtools = false
 
-function runQuery(data, success, error) {
-  return $.ajax({
-    url: window.runQueriesPath,
-    method: "POST",
-    data: data,
-    dataType: "html"
-  }).done( function (d) {
-    if (d[0] == "{") {
-      var response = $.parseJSON(d);
-      data.blazer = response;
-      setTimeout( function () {
-        runQuery(data, success, error);
-      }, 1000);
-    } else {
-      success(d);
-    }
-  }).fail( function(jqXHR, textStatus, errorThrown) {
-    var message = (typeof errorThrown === "string") ? errorThrown : errorThrown.message;
-    error(message);
-  });
-}
+$(document).on('mouseenter', '.dropdown-toggle', function () {
+  $(this).parent().addClass('open')
+})
+
+$(document).on("change", "#bind input, #bind select", function () {
+  submitIfCompleted($(this).closest("form"))
+})
+
+$(document).on("click", "#code", function () {
+  $(this).addClass("expanded")
+})
 
 function submitIfCompleted($form) {
-  var completed = true;
+  var completed = true
   $form.find("input[name], select").each( function () {
     if ($(this).val() == "") {
-      completed = false;
+      completed = false
     }
-  });
+  })
   if (completed) {
-    $form.submit();
+    $form.submit()
   }
 }
 
@@ -63,30 +47,33 @@ function submitIfCompleted($form) {
 // Adapted from Biff MaGriff: http://stackoverflow.com/a/7895814/1196499
 function preventBackspaceNav() {
   $(document).keydown(function (e) {
-    var preventKeyPress;
+    var preventKeyPress
     if (e.keyCode == 8) {
-      var d = e.srcElement || e.target;
+      var d = e.srcElement || e.target
       switch (d.tagName.toUpperCase()) {
         case 'TEXTAREA':
-          preventKeyPress = d.readOnly || d.disabled;
-          break;
+          preventKeyPress = d.readOnly || d.disabled
+          break
         case 'INPUT':
-          preventKeyPress = d.readOnly || d.disabled || (d.attributes["type"] && $.inArray(d.attributes["type"].value.toLowerCase(), ["radio", "reset", "checkbox", "submit", "button"]) >= 0);
-          break;
+          preventKeyPress = d.readOnly || d.disabled || (d.attributes["type"] && $.inArray(d.attributes["type"].value.toLowerCase(), ["radio", "reset", "checkbox", "submit", "button"]) >= 0)
+          break
         case 'DIV':
-          preventKeyPress = d.readOnly || d.disabled || !(d.attributes["contentEditable"] && d.attributes["contentEditable"].value == "true");
-          break;
+          preventKeyPress = d.readOnly || d.disabled || !(d.attributes["contentEditable"] && d.attributes["contentEditable"].value == "true")
+          break
         default:
-          preventKeyPress = true;
-          break;
+          preventKeyPress = true
+          break
       }
     }
     else {
-      preventKeyPress = false;
+      preventKeyPress = false
     }
 
     if (preventKeyPress) {
-      e.preventDefault();
+      e.preventDefault()
     }
-  });
+  })
 }
+
+preventBackspaceNav()
+

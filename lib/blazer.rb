@@ -7,6 +7,10 @@ require "blazer/data_source"
 require "blazer/result"
 require "blazer/run_statement"
 require "blazer/adapters/base_adapter"
+require "blazer/adapters/athena_adapter"
+require "blazer/adapters/bigquery_adapter"
+require "blazer/adapters/drill_adapter"
+require "blazer/adapters/druid_adapter"
 require "blazer/adapters/elasticsearch_adapter"
 require "blazer/adapters/mongodb_adapter"
 require "blazer/adapters/presto_adapter"
@@ -31,6 +35,7 @@ module Blazer
     attr_accessor :anomaly_checks
     attr_accessor :async
     attr_accessor :images
+    attr_accessor :query_editable
   end
   self.audit = true
   self.user_name = :name
@@ -75,7 +80,20 @@ module Blazer
       ]
       ds.default = ds.values.first
       ds
+
+      # TODO Blazer 2.0
+      # ds2 = Hash.new { |hash, key| raise Blazer::Error, "Unknown data source: #{key}" }
+      # ds.each do |k, v|
+      #   ds2[k] = v
+      # end
+      # ds2
     end
+  end
+
+  def self.extract_vars(statement)
+    # strip commented out lines
+    # and regex {1} or {1,2}
+    statement.gsub(/\-\-.+/, "").gsub(/\/\*.+\*\//m, "").scan(/\{\w*?\}/i).map { |v| v[1...-1] }.reject { |v| /\A\d+(\,\d+)?\z/.match(v) || v.empty? }.uniq
   end
 
   def self.run_checks(schedule: nil)
@@ -113,7 +131,14 @@ module Blazer
           break
         end
       end
-      check.update_state(result)
+
+      begin
+        check.reload # in case state has changed since job started
+        check.update_state(result)
+      rescue ActiveRecord::RecordNotFound
+        # check deleted
+      end
+
       # TODO use proper logfmt
       Rails.logger.info "[blazer check] query=#{check.query.name} state=#{check.state} rows=#{result.rows.try(:size)} error=#{result.error}"
 
@@ -135,7 +160,26 @@ module Blazer
     end
 
     emails.each do |email, checks|
-      Blazer::CheckMailer.failing_checks(email, checks).deliver_later
+      Safely.safely do
+        Blazer::CheckMailer.failing_checks(email, checks).deliver_now
+      end
     end
   end
+
+  def self.adapters
+    @adapters ||= {}
+  end
+
+  def self.register_adapter(name, adapter)
+    adapters[name] = adapter
+  end
 end
+
+Blazer.register_adapter "athena", Blazer::Adapters::AthenaAdapter
+Blazer.register_adapter "bigquery", Blazer::Adapters::BigQueryAdapter
+Blazer.register_adapter "drill", Blazer::Adapters::DrillAdapter
+Blazer.register_adapter "druid", Blazer::Adapters::DruidAdapter
+Blazer.register_adapter "elasticsearch", Blazer::Adapters::ElasticsearchAdapter
+Blazer.register_adapter "presto", Blazer::Adapters::PrestoAdapter
+Blazer.register_adapter "mongodb", Blazer::Adapters::MongodbAdapter
+Blazer.register_adapter "sql", Blazer::Adapters::SqlAdapter

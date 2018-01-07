@@ -1,5 +1,5 @@
 module Blazer
-  class Audit < ActiveRecord::Base
+  class Audit < Record
     if Blazer.user_class.present? && Blazer.user_class.constantize < ActiveRecord::Base
       belongs_to :user, Blazer::BELONGS_TO_OPTIONAL.merge(class_name: Blazer.user_class.to_s)
     end

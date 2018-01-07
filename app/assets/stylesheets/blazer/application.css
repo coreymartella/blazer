@@ -55,6 +55,10 @@ input.search:focus {
   text-align: left;
 }
 
+#statement-box .selectize-control {
+  margin-right: 0;
+}
+
 #editor-container {
   background-color: #141414;
   padding-top: 10px;
@@ -62,7 +66,6 @@ input.search:focus {
 }
 
 #editor {
-  display: none;
   height: 160px;
 }
 
@@ -89,7 +92,7 @@ input.search:focus {
   text-align: left;
 }
 
-.dashboard a {
+.dashboard {
   font-weight: bold;
 }
 
@@ -148,6 +151,8 @@ input.search:focus {
   cursor: pointer;
   color: #d9534f;
   display: none;
+  float: right;
+  margin-top: 3px;
 }
 
 .list-group li:hover .glyphicon-remove {
@@ -156,4 +161,38 @@ input.search:focus {
 
 .list-group {
   cursor: move;
+}
+
+#header a.active {
+  color: #999;
+}
+
+#code {
+  max-height: 236px;
+  overflow: hidden;
+}
+
+#code.expanded {
+  max-height: none;
+}
+
+[v-cloak] {
+  display: none;
+}
+
+.chart-container {
+  padding-top: 10px;
+  clear: both;
+}
+
+.chart-container h4 {
+  text-align: center;
+}
+
+.chart-container h4 a {
+  color: inherit;
+}
+
+.query-error {
+  color: red;
 }
